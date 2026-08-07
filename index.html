@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconnect Check-In</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: #003865;
+      padding: 20px 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    header h1 span.deltek { color: #ffffff; }
+    header h1 span.reconnect { color: #41b6e6; }
+
+    header p {
+      color: #a8c8e0;
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 480px;
+      margin: 40px 16px;
+    }
+
+    .card h2 {
+      font-size: 1.3rem;
+      color: #003865;
+      margin-bottom: 8px;
+    }
+
+    .card p.subtitle {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="email"]:focus { border-color: #003865; }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #003865;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #005099; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+
+    .message {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      display: none;
+    }
+
+    .message.success { background: #e6f4ea; color: #1e7e34; border: 1px solid #b7dfbf; }
+    .message.warning { background: #fff8e1; color: #856404; border: 1px solid #ffeeba; }
+    .message.error   { background: #fdecea; color: #b71c1c; border: 1px solid #f5c6cb; }
+
+    .spinner {
+      display: none;
+      text-align: center;
+      margin-top: 16px;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    footer {
+      color: #aaa;
+      font-size: 0.8rem;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><span class="deltek">Deltek</span> <span class="reconnect">Reconnect</span></h1>
+    <p>Annual Company Meetup — Registration</p>
+  </header>
+
+  <div class="card">
+    <h2>Join the Queue</h2>
+    <p class="subtitle">Enter your work email to register and join the collection queue.</p>
+
+    <label for="emailInput">Work Email</label>
+    <input type="email" id="emailInput" placeholder="you@deltek.com" autocomplete="email" />
+
+    <button id="joinBtn" onclick="joinQueue()">Join Queue</button>
+
+    <div class="spinner" id="spinner">Checking... please wait</div>
+
+    <div class="message" id="msgBox"></div>
+  </div>
+
+  <footer>Powered by Deltek &middot; Reconnect 2026</footer>
+
+  <script>
+    const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
+
+    async function joinQueue() {
+      const email = document.getElementById('emailInput').value.trim().toLowerCase();
+      const btn = document.getElementById('joinBtn');
+      const spinner = document.getElementById('spinner');
+      const msgBox = document.getElementById('msgBox');
+
+      msgBox.style.display = 'none';
+      msgBox.className = 'message';
+
+      if (!email || !email.includes('@')) {
+        showMessage('Please enter a valid email address.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      spinner.style.display = 'block';
+
+      try {
+        const response = await fetch(FLOW_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const text = await response.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch { data = { message: text }; }
+
+        if (data.message === 'joined_queue' || text.includes('joined_queue')) {
+          showMessage('✅ You have joined the queue! Please wait to be called.', 'success');
+          document.getElementById('emailInput').value = '';
+        } else if (data.message === 'already_in_queue' || text.includes('already_in_queue')) {
+          showMessage('⚠️ You are already in the queue. Please wait to be called.', 'warning');
+        } else if (data.message === 'already_collected' || text.includes('already_collected')) {
+          showMessage('✅ You have already collected your items. Enjoy the event!', 'success');
+        } else if (data.message === 'email_not_found' || text.includes('email_not_found')) {
+          showMessage('❌ Email not found. Please check and try again.', 'error');
+        } else {
+          showMessage('❌ Email not found. Please check and try again.', 'error');
+        }
+      } catch (err) {
+        showMessage('❌ Something went wrong. Please try again or see a staff member.', 'error');
+      }
+
+      spinner.style.display = 'none';
+      btn.disabled = false;
+    }
+
+    function showMessage(text, type) {
+      const msgBox = document.getElementById('msgBox');
+      msgBox.textContent = text;
+      msgBox.className = 'message ' + type;
+      msgBox.style.display = 'block';
+    }
+
+    document.getElementById('emailInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') joinQueue();
+    });
+  </script>
+
+</body>
+</html>
