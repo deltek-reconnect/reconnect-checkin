@@ -1,215 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reconnect Check-In</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deltek Reconnect 2026 — Check-in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --deep:#081B3F; --mid:#0F3A8A; --bright:#1E6FE0; --glow:#5FD4FF;
+    --sage:#2F5D3F; --sage-bg:#E4EFE7; --amber:#7A5C00; --amber-bg:#FFF8E1;
+    --coral:#B23A3A; --coral-bg:#F7E5E5; --slate:#5C6B73;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Inter',sans-serif;color:#0A1E3D;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(95,212,255,0.18), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(95,212,255,0.14), transparent 50%),
+      linear-gradient(135deg, var(--deep) 0%, var(--mid) 55%, var(--bright) 100%);
+  }
+  .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
+  .app{position:relative;z-index:1;max-width:560px;width:100%;padding:24px;}
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+  .kicker{
+    text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
+    letter-spacing:0.18em;color:rgba(255,255,255,0.75);text-transform:uppercase;margin-bottom:14px;
+  }
+  .welcome{
+    text-align:center;font-family:'Archivo',sans-serif;font-weight:800;color:#fff;
+    font-size:clamp(26px,5vw,34px);line-height:1.15;margin:0 0 10px;letter-spacing:-0.01em;
+    text-shadow:0 2px 20px rgba(0,0,0,0.2);
+  }
+  .welcome span{color:var(--glow);}
+  .tagline{text-align:center;color:rgba(255,255,255,0.85);font-size:15px;margin:0 0 28px;}
 
-    header {
-      width: 100%;
-      background: #003865;
-      padding: 20px 24px;
-      text-align: center;
-    }
+  .panel{
+    background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:36px 32px;
+    box-shadow:0 20px 60px rgba(4,20,50,0.35), 0 0 0 1px rgba(95,212,255,0.15);
+  }
+  .panel .instruction{color:var(--slate);font-size:14px;margin:0 0 22px;text-align:center;}
 
-    header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
+  .kiosk-form input{
+    width:100%;font-size:20px;padding:18px 16px;border:2px solid #0A1E3D;border-radius:8px;
+    font-family:'IBM Plex Mono',monospace;margin-bottom:14px;transition:border-color .15s, box-shadow .15s;
+  }
+  .kiosk-form input:focus{outline:none;border-color:var(--bright);box-shadow:0 0 0 4px rgba(30,111,224,0.15);}
+  .kiosk-form button{
+    width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:17px;
+    background:linear-gradient(135deg,var(--bright),var(--mid));color:#fff;border:none;border-radius:8px;
+    padding:16px;cursor:pointer;letter-spacing:0.02em;transition:transform .1s, opacity .15s;
+  }
+  .kiosk-form button:disabled{opacity:0.5;cursor:not-allowed;}
+  .kiosk-form button:hover:not(:disabled){transform:translateY(-1px);}
+  .kiosk-form button:active:not(:disabled){transform:translateY(0);}
 
-    header h1 span.deltek { color: #ffffff; }
-    header h1 span.reconnect { color: #41b6e6; }
+  .message{padding:18px 20px;border-radius:10px;font-size:15px;margin-top:18px;display:none;align-items:flex-start;gap:12px;}
+  .message.show{display:flex;}
+  .message.success{background:var(--sage-bg);color:var(--sage);border:1px solid var(--sage);}
+  .message.warning{background:var(--amber-bg);color:var(--amber);border:1px solid #e0c84a;}
+  .message.error{background:var(--coral-bg);color:var(--coral);border:1px solid var(--coral);}
+  .message strong{display:block;font-family:'Archivo',sans-serif;font-size:16px;margin-bottom:4px;}
+  .message .icon{flex-shrink:0;width:22px;height:22px;margin-top:1px;}
 
-    header p {
-      color: #a8c8e0;
-      font-size: 0.9rem;
-      margin-top: 4px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      padding: 36px 32px;
-      width: 100%;
-      max-width: 480px;
-      margin: 40px 16px;
-    }
-
-    .card h2 {
-      font-size: 1.3rem;
-      color: #003865;
-      margin-bottom: 8px;
-    }
-
-    .card p.subtitle {
-      color: #666;
-      font-size: 0.95rem;
-      margin-bottom: 28px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #444;
-      margin-bottom: 6px;
-    }
-
-    input[type="email"] {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input[type="email"]:focus { border-color: #003865; }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      background: #003865;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      transition: background 0.2s;
-    }
-
-    button:hover { background: #005099; }
-    button:disabled { background: #aaa; cursor: not-allowed; }
-
-    .message {
-      margin-top: 20px;
-      padding: 14px 16px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      display: none;
-    }
-
-    .message.success { background: #e6f4ea; color: #1e7e34; border: 1px solid #b7dfbf; }
-    .message.warning { background: #fff8e1; color: #856404; border: 1px solid #ffeeba; }
-    .message.error   { background: #fdecea; color: #b71c1c; border: 1px solid #f5c6cb; }
-
-    .spinner {
-      display: none;
-      text-align: center;
-      margin-top: 16px;
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    footer {
-      color: #aaa;
-      font-size: 0.8rem;
-      margin-bottom: 24px;
-    }
-  </style>
+  .footer-hint{text-align:center;color:rgba(255,255,255,0.65);font-size:12.5px;margin-top:22px;}
+</style>
 </head>
 <body>
 
-  <header>
-    <h1><span class="deltek">Deltek</span> <span class="reconnect">Reconnect</span></h1>
-    <p>Annual Company Meetup — Registration</p>
-  </header>
+<svg class="bg-fx" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#5FD4FF" stroke-width="1" opacity="0.35">
+    <line x1="80" y1="120" x2="240" y2="60"/><line x1="240" y1="60" x2="420" y2="150"/>
+    <line x1="420" y1="150" x2="620" y2="70"/><line x1="620" y1="70" x2="740" y2="180"/>
+    <line x1="80" y1="120" x2="180" y2="260"/><line x1="180" y1="260" x2="420" y2="150"/>
+    <line x1="420" y1="150" x2="520" y2="320"/><line x1="520" y1="320" x2="740" y2="180"/>
+    <line x1="180" y1="260" x2="120" y2="440"/><line x1="520" y1="320" x2="640" y2="500"/>
+    <line x1="120" y1="440" x2="320" y2="560"/><line x1="320" y1="560" x2="640" y2="500"/>
+    <line x1="320" y1="560" x2="260" y2="720"/><line x1="640" y1="500" x2="560" y2="700"/>
+    <line x1="260" y1="720" x2="560" y2="700"/>
+  </g>
+  <g fill="#5FD4FF">
+    <circle cx="80" cy="120" r="4"><animate attributeName="opacity" values="0.3;0.9;0.3" dur="4s" repeatCount="indefinite"/></circle>
+    <circle cx="240" cy="60" r="3.5"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="5s" repeatCount="indefinite"/></circle>
+    <circle cx="420" cy="150" r="5"><animate attributeName="opacity" values="0.4;1;0.4" dur="3.5s" repeatCount="indefinite"/></circle>
+    <circle cx="620" cy="70" r="3.5"><animate attributeName="opacity" values="0.7;0.3;0.7" dur="4.5s" repeatCount="indefinite"/></circle>
+    <circle cx="740" cy="180" r="4"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="5.5s" repeatCount="indefinite"/></circle>
+    <circle cx="180" cy="260" r="4.5"><animate attributeName="opacity" values="0.5;0.9;0.5" dur="4s" repeatCount="indefinite"/></circle>
+    <circle cx="520" cy="320" r="4"><animate attributeName="opacity" values="0.3;0.7;0.3" dur="6s" repeatCount="indefinite"/></circle>
+    <circle cx="120" cy="440" r="3.5"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="4.2s" repeatCount="indefinite"/></circle>
+    <circle cx="640" cy="500" r="5"><animate attributeName="opacity" values="0.4;0.9;0.4" dur="3.8s" repeatCount="indefinite"/></circle>
+    <circle cx="320" cy="560" r="4"><animate attributeName="opacity" values="0.5;0.8;0.5" dur="5.2s" repeatCount="indefinite"/></circle>
+    <circle cx="260" cy="720" r="3.5"><animate attributeName="opacity" values="0.3;0.7;0.3" dur="4.7s" repeatCount="indefinite"/></circle>
+    <circle cx="560" cy="700" r="4.5"><animate attributeName="opacity" values="0.6;0.9;0.6" dur="3.6s" repeatCount="indefinite"/></circle>
+  </g>
+</svg>
 
-  <div class="card">
-    <h2>Join the Queue</h2>
-    <p class="subtitle">Enter your work email to register and join the collection queue.</p>
+<div class="app">
+  <div class="kicker">Deltek Reconnect 2026</div>
+  <h1 class="welcome">Welcome to <span>Deltek Reconnect</span></h1>
+  <p class="tagline">Let's get you checked in.</p>
 
-    <label for="emailInput">Work Email</label>
-    <input type="email" id="emailInput" placeholder="you@deltek.com" autocomplete="email" />
-
-    <button id="joinBtn" onclick="joinQueue()">Join Queue</button>
-
-    <div class="spinner" id="spinner">Checking... please wait</div>
-
+  <div class="panel">
+    <p class="instruction">Enter the email you registered with to join the check-in queue.</p>
+    <div class="kiosk-form">
+      <input type="email" id="emailInput" placeholder="name@company.com" autocomplete="off" autofocus>
+      <button id="joinBtn">Join Queue</button>
+    </div>
     <div class="message" id="msgBox"></div>
   </div>
+  <p class="footer-hint">Having trouble? A member of our team at the help desk is happy to assist.</p>
+</div>
 
-  <footer>Powered by Deltek &middot; Reconnect 2026</footer>
+<script>
+const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
+const AUTO_RESET_MS = 7000;
 
-  <script>
-    const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
+const CHECK_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ALERT_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.3" r="0.9" fill="currentColor"/></svg>`;
 
-    async function joinQueue() {
-      const email = document.getElementById('emailInput').value.trim().toLowerCase();
-      const btn = document.getElementById('joinBtn');
-      const spinner = document.getElementById('spinner');
-      const msgBox = document.getElementById('msgBox');
+let resetTimer = null;
 
-      msgBox.style.display = 'none';
-      msgBox.className = 'message';
+function showMessage(kind, title, body) {
+  const el = document.getElementById('msgBox');
+  el.className = 'message show ' + kind;
+  const icon = kind === 'success' ? CHECK_ICON : ALERT_ICON;
+  el.innerHTML = icon + `<div><strong>${title}</strong>${body}</div>`;
+  clearTimeout(resetTimer);
+  resetTimer = setTimeout(resetForm, AUTO_RESET_MS);
+}
 
-      if (!email || !email.includes('@')) {
-        showMessage('Please enter a valid email address.', 'error');
-        return;
-      }
+function resetForm() {
+  document.getElementById('msgBox').className = 'message';
+  const input = document.getElementById('emailInput');
+  input.value = '';
+  input.focus();
+}
 
-      btn.disabled = true;
-      spinner.style.display = 'block';
+document.getElementById('joinBtn').addEventListener('click', joinQueue);
+document.getElementById('emailInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinQueue(); });
 
-      try {
-        const response = await fetch(FLOW_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
+async function joinQueue() {
+  const input = document.getElementById('emailInput');
+  const btn = document.getElementById('joinBtn');
+  const email = input.value.trim().toLowerCase();
 
-        const text = await response.text();
-        let data = {};
-        try { data = JSON.parse(text); } catch { data = { message: text }; }
+  document.getElementById('msgBox').className = 'message';
 
-        if (data.message === 'joined_queue' || text.includes('joined_queue')) {
-          showMessage('✅ You have joined the queue! Please wait to be called.', 'success');
-          document.getElementById('emailInput').value = '';
-        } else if (data.message === 'already_in_queue' || text.includes('already_in_queue')) {
-          showMessage('⚠️ You are already in the queue. Please wait to be called.', 'warning');
-        } else if (data.message === 'already_collected' || text.includes('already_collected')) {
-          showMessage('✅ You have already collected your items. Enjoy the event!', 'success');
-        } else if (data.message === 'email_not_found' || text.includes('email_not_found')) {
-          showMessage('❌ Email not found. Please check and try again.', 'error');
-        } else {
-          showMessage('❌ Email not found. Please check and try again.', 'error');
-        }
-      } catch (err) {
-        showMessage('❌ Something went wrong. Please try again or see a staff member.', 'error');
-      }
+  if (!email || !email.includes('@')) {
+    showMessage('error', 'Enter an email', 'Type the email you registered with, then join the queue.');
+    return;
+  }
 
-      spinner.style.display = 'none';
-      btn.disabled = false;
-    }
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
 
-    function showMessage(text, type) {
-      const msgBox = document.getElementById('msgBox');
-      msgBox.textContent = text;
-      msgBox.className = 'message ' + type;
-      msgBox.style.display = 'block';
-    }
-
-    document.getElementById('emailInput').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') joinQueue();
+  try {
+    const response = await fetch(FLOW_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
     });
-  </script>
 
+    const text = await response.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch { data = { message: text }; }
+
+    if (data.message === 'joined_queue' || text.includes('joined_queue')) {
+      showMessage('success', "You're in the queue!", 'Head to the desk when your number is called.');
+      input.value = '';
+    } else if (data.message === 'already_in_queue' || text.includes('already_in_queue')) {
+      showMessage('warning', "You're already in the queue", 'Please wait — staff can see you coming.');
+    } else if (data.message === 'already_collected' || text.includes('already_collected')) {
+      showMessage('success', 'Already collected', 'Your items were already picked up. Enjoy the event!');
+    } else {
+      showMessage('error', 'No match found', "This email isn't on the list. Please see the help desk.");
+    }
+  } catch (err) {
+    showMessage('error', 'Connection problem', "Couldn't reach the server. Please try again.");
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Join Queue';
+}
+</script>
 </body>
 </html>
