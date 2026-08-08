@@ -27,24 +27,22 @@
   .app{max-width:520px;width:100%;flex-shrink:0;}
   .queue-sidebar{
     width:220px;flex-shrink:0;align-self:stretch;
-    background:rgba(255,255,255,0.08);backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.15);border-radius:16px;
     padding:20px 16px;max-height:70vh;display:flex;flex-direction:column;
   }
-  .qs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .qs-header{text-align:center;margin-bottom:14px;}
   .qs-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);}
-  .qs-count{font-family:'Archivo',sans-serif;font-weight:800;font-size:20px;color:var(--glow);}
-  .qs-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .qs-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;perspective:800px;}
   .qs-name{font-size:16px;font-weight:600;color:rgba(255,255,255,0.88);padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .qs-name.first{background:rgba(95,212,255,0.15);color:var(--glow);}
   .qs-empty{font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:16px 0;}
 
   @media(max-width:700px){
-    .layout{flex-direction:column;align-items:stretch;gap:16px;padding:16px;}
-    .queue-sidebar{width:100%;max-height:none;flex-direction:column;}
-    .qs-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;padding-bottom:4px;flex-wrap:nowrap;}
-    .qs-name{flex-shrink:0;white-space:nowrap;}
-    .app{max-width:100%;}
+    .layout{flex-direction:row;align-items:stretch;gap:10px;padding:12px;min-height:100vh;}
+    .queue-sidebar{width:88px;flex-shrink:0;max-height:none;padding:14px 8px;}
+    .qs-list{flex-direction:column;overflow-y:auto;overflow-x:hidden;gap:4px;}
+    .qs-name{font-size:11px;padding:7px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .qs-title{font-size:9px;letter-spacing:0.12em;}
+    .app{flex:1;min-width:0;max-width:100%;}
   }
 
   .kicker{
@@ -125,7 +123,6 @@
 <div class="queue-sidebar">
   <div class="qs-header">
     <span class="qs-title">In Queue</span>
-    <span class="qs-count" id="qsCount">—</span>
   </div>
   <div class="qs-list" id="qsList">
     <div class="qs-empty">No one waiting yet</div>
@@ -234,7 +231,7 @@ async function loadQueue() {
     let data = {};
     try { data = JSON.parse(text); } catch {}
     const queue = data.queue || [];
-    document.getElementById('qsCount').textContent = queue.length || '0';
+
     const list = document.getElementById('qsList');
     if (queue.length === 0) {
       list.innerHTML = '<div class="qs-empty">No one waiting yet</div>';
@@ -248,6 +245,66 @@ async function loadQueue() {
 
 loadQueue();
 setInterval(loadQueue, 5000);
+
+function scatterQueue() {
+  const names = [...document.querySelectorAll('#qsList .qs-name')];
+  if (names.length < 2) return;
+
+  // overlay covers the full viewport so clones can fly anywhere
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:visible;';
+  document.body.appendChild(overlay);
+
+  // clone each name at its real screen position
+  const clones = names.map(el => {
+    const r = el.getBoundingClientRect();
+    const clone = el.cloneNode(true);
+    clone.style.cssText = `position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;margin:0;animation:none;transition:none;`;
+    overlay.appendChild(clone);
+    return { clone, origTop: r.top, origLeft: r.left };
+  });
+  names.forEach(el => el.style.opacity = '0');
+
+  // scatter outward from screen centre
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    clones.forEach(({ clone }, i) => {
+      const angle = (i / clones.length) * Math.PI * 2 + Math.random() * 0.6;
+      const dist = 160 + Math.random() * 200;
+      const rot = (Math.random() - 0.5) * 100;
+      setTimeout(() => {
+        clone.style.transition = 'transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.4s';
+        clone.style.transform = `translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px) rotate(${rot}deg) scale(0.7)`;
+        clone.style.opacity = '0.55';
+      }, i * 50);
+    });
+
+    // snap back with no-overshoot easing
+    setTimeout(() => {
+      // restore opacity instantly before moving — eliminates ghost
+      clones.forEach(({ clone }) => {
+        clone.style.transition = 'none';
+        clone.style.opacity = '1';
+        clone.style.transform = clone.style.transform; // force reflow
+      });
+      requestAnimationFrame(() => {
+        clones.forEach(({ clone }, i) => {
+          setTimeout(() => {
+            clone.style.transition = 'transform 0.65s cubic-bezier(0.16,1,0.3,1)';
+            clone.style.transform = '';
+          }, i * 55);
+        });
+        const lastLands = (clones.length - 1) * 55 + 680;
+        setTimeout(() => {
+          overlay.remove();
+          names.forEach(el => el.style.opacity = '');
+        }, lastLands);
+      });
+    }, clones.length * 50 + 3000);
+  }));
+}
+
+setInterval(scatterQueue, 10000);
 </script>
 </body>
 </html>
