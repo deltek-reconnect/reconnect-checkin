@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconnect 2026 — Front Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --deep:#081B3F;--mid:#0F3A8A;--bright:#1E6FE0;--glow:#5FD4FF;
+    --sage:#2F5D3F;--sage-bg:#E4EFE7;--coral:#B23A3A;--coral-bg:#F7E5E5;--slate:#5C6B73;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;min-height:100vh;
+    background:linear-gradient(135deg,var(--deep) 0%,var(--mid) 55%,var(--bright) 100%);
+    color:#fff;padding:24px;
+  }
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .logo{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;}
+  .logo span{color:var(--glow);}
+  .screen-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-top:2px;}
+  .refresh-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(255,255,255,0.7);
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+  .stat{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:16px 20px;text-align:center;}
+  .stat-num{font-family:'Archivo',sans-serif;font-weight:800;font-size:36px;color:var(--glow);line-height:1;}
+  .stat-label{font-size:12px;color:rgba(255,255,255,0.65);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;}
+
+  .main{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+  @media(max-width:800px){.main{grid-template-columns:1fr;}}
+
+  .person-card{
+    background:rgba(255,255,255,0.97);border-radius:16px;padding:32px;color:#0A1E3D;
+    box-shadow:0 20px 60px rgba(4,20,50,0.3);
+  }
+  .now-serving{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--slate);margin-bottom:12px;}
+  .person-name{font-family:'Archivo',sans-serif;font-weight:800;font-size:32px;line-height:1.1;margin-bottom:20px;}
+  .person-queue{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;
+    background:var(--deep);color:var(--glow);border-radius:6px;padding:4px 12px;margin-bottom:20px;
+  }
+  .details{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .detail-item label{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--slate);font-family:'IBM Plex Mono',monospace;}
+  .detail-item p{font-size:15px;font-weight:600;margin-top:2px;color:#0A1E3D;}
+
+  .empty-card{
+    background:rgba(255,255,255,0.15);border:2px dashed rgba(255,255,255,0.3);border-radius:16px;
+    padding:48px 32px;text-align:center;
+  }
+  .empty-card h2{font-family:'Archivo',sans-serif;font-size:22px;margin-bottom:8px;}
+  .empty-card p{color:rgba(255,255,255,0.65);font-size:14px;}
+
+  .actions{display:flex;flex-direction:column;gap:14px;}
+  .btn{
+    width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:16px;
+    border:none;border-radius:10px;padding:18px;cursor:pointer;transition:transform .1s,opacity .15s;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn:hover:not(:disabled){transform:translateY(-1px);}
+  .btn-collect{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+  .btn-skip{background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.25);}
+  .btn-skip:hover:not(:disabled){background:rgba(255,255,255,0.18);}
+
+  .action-note{font-size:12px;color:rgba(255,255,255,0.5);text-align:center;margin-top:4px;font-family:'IBM Plex Mono',monospace;}
+
+  #toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:#1e293b;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;
+    opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  #toast.show{opacity:1;}
+
+  #error-bar{background:#fdecea;color:#B23A3A;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;display:none;}
+  #error-bar.show{display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Deltek <span>Reconnect</span></div>
+    <div class="screen-label">Front Desk</div>
+  </div>
+  <div class="refresh-badge"><span class="dot"></span><span>Live</span></div>
+</header>
+
+<div id="error-bar"></div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="statReg">—</div><div class="stat-label">Registered</div></div>
+  <div class="stat"><div class="stat-num" id="statQueue">—</div><div class="stat-label">In Queue</div></div>
+  <div class="stat"><div class="stat-num" id="statCollected">—</div><div class="stat-label">Collected</div></div>
+</div>
+
+<div class="main">
+  <div id="personArea">
+    <div class="empty-card"><h2>Loading…</h2><p>Fetching current person</p></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-collect" id="btnCollect" disabled onclick="markAction('collected')">
+      ✓ &nbsp;Mark as Collected
+    </button>
+    <button class="btn btn-skip" id="btnSkip" disabled onclick="markAction('skipped')">
+      ↩ &nbsp;Didn't collect / stepped away
+    </button>
+    <div class="action-note">Auto-advances to next person</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── PASTE YOUR FLOW URLs HERE ──────────────────────────────────────────────
+const GET_CURRENT_URL    = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/20/workflows/16c2055d77a14a2a88a079a5356cbdd6/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=7CGLgoR_seUyJgHN0ZkcicpozX0M65cmhAPODp_RCvo";
+const GET_STATS_URL      = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/25a59748dae1438f9115adb40206d285/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=LSeDZNpjB2ge6r4JDJB8arOgHiVJxcbB33p_6itduyo";
+const MARK_COLLECTED_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/f1cdb7eafab64479bcb1e115cb8a9cd6/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=wTuHOq_nw-0OsmvIa9pzbKYh7zlKu4DpA5cZ3YCKkqg";
+const MARK_SKIPPED_URL   = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/7f5bdb8bce6c41e3894cdd4d4a074ca0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HoEu-lH94eQjwMobXd0CQKOfYGKg6M5xIlB7Ql20KWM";
+// ──────────────────────────────────────────────────────────────────────────
+
+const REFRESH_MS = 5000;
+let currentId = null;
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show';
+  setTimeout(() => el.className = '', 2500);
+}
+
+function renderPerson(p) {
+  if (!p) {
+    document.getElementById('personArea').innerHTML = `
+      <div class="empty-card">
+        <h2>Queue is clear</h2>
+        <p>No one waiting — all caught up!</p>
+      </div>`;
+    document.getElementById('btnCollect').disabled = true;
+    document.getElementById('btnSkip').disabled = true;
+    currentId = null;
+    return;
+  }
+  currentId = p.crf9c_registrationqueueid || p.crf9c_registrationqueuesid || p.id;
+  document.getElementById('personArea').innerHTML = `
+    <div class="person-card">
+      <div class="now-serving">Now checking in</div>
+      <div class="person-name">${p.crf9c_name || p.name}</div>
+      <div class="person-queue">Next in Queue</div>
+      <div class="details">
+        <div class="detail-item"><label>Employee ID</label><p>${p.crf9c_employeeid || p.employeeId || '—'}</p></div>
+        <div class="detail-item"><label>T-Shirt Size</label><p>${p.crf9c_tshirtsize || p.tshirtSize || '—'}</p></div>
+        <div class="detail-item"><label>Team</label><p>${p.crf9c_team || p.team || '—'}</p></div>
+        <div class="detail-item"><label>Email</label><p>${p.crf9c_email || p.email || '—'}</p></div>
+      </div>
+    </div>`;
+  document.getElementById('btnCollect').disabled = false;
+  document.getElementById('btnSkip').disabled = false;
+}
+
+async function loadCurrent() {
+  try {
+    const [cRes, sRes] = await Promise.all([
+      fetch(GET_CURRENT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
+      fetch(GET_STATS_URL,   { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    ]);
+    const cText = await cRes.text();
+    const sText = await sRes.text();
+    let cData = {}, sData = {};
+    try { cData = JSON.parse(cText); } catch {}
+    try { sData = JSON.parse(sText); } catch {}
+
+    document.getElementById('statReg').textContent       = sData.registered ?? '—';
+    document.getElementById('statQueue').textContent     = sData.inQueue    ?? '—';
+    document.getElementById('statCollected').textContent = sData.collected  ?? '—';
+
+    renderPerson(cData.current || null);
+    document.getElementById('error-bar').className = '';
+  } catch (err) {
+    document.getElementById('error-bar').className = 'show';
+    document.getElementById('error-bar').textContent = 'Could not load data. Check your flow URLs.';
+  }
+}
+
+async function markAction(type) {
+  if (!currentId) return;  const btnCollect = document.getElementById('btnCollect');
+  const btnSkip = document.getElementById('btnSkip');
+  btnCollect.disabled = true;
+  btnSkip.disabled = true;
+
+  const url = type === 'collected' ? MARK_COLLECTED_URL : MARK_SKIPPED_URL;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: currentId })
+    });
+    showToast(type === 'collected' ? '✓ Marked as collected' : '↩ Moved to skipped');
+    await loadCurrent();
+  } catch (err) {
+    showToast('Error — please try again');
+    btnCollect.disabled = false;
+    btnSkip.disabled = false;
+  }
+}
+
+loadCurrent();
+setInterval(loadCurrent, REFRESH_MS);
+</script>
+</body>
+</html>

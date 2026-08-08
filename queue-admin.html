@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconnect 2026 — Queue Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --deep:#081B3F;--mid:#0F3A8A;--bright:#1E6FE0;--glow:#5FD4FF;
+    --sage:#2F5D3F;--sage-bg:#E4EFE7;--slate:#5C6B73;--line:#D8D6CC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;min-height:100vh;
+    background:linear-gradient(135deg,var(--deep) 0%,var(--mid) 55%,var(--bright) 100%);
+    color:#fff;padding:24px;
+  }
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .logo{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;}
+  .logo span{color:var(--glow);}
+  .screen-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-top:2px;}
+  .refresh-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(255,255,255,0.7);
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+  .stat{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:16px 20px;}
+  .stat-num{font-family:'Archivo',sans-serif;font-weight:800;font-size:32px;color:var(--glow);line-height:1;}
+  .stat-label{font-size:12px;color:rgba(255,255,255,0.65);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;}
+
+  .table-wrap{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(4,20,50,0.3);}
+  .table-head{display:grid;grid-template-columns:80px 1fr 120px 130px;background:var(--deep);color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:12px 20px;font-family:'IBM Plex Mono',monospace;}
+  #queueList{color:#0A1E3D;}
+  .queue-row{
+    display:grid;grid-template-columns:80px 1fr 120px 130px;padding:14px 20px;
+    border-bottom:1px solid #f0f0f0;align-items:center;transition:background .15s;
+  }
+  .queue-row:last-child{border-bottom:none;}
+  .queue-row:hover{background:#f5f8ff;}
+  .queue-num{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:18px;color:var(--bright);}
+  .queue-name{font-weight:600;font-size:15px;}
+  .queue-tshirt{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--slate);}
+  .queue-empid{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--slate);}
+
+
+  .empty-state{padding:48px;text-align:center;color:var(--slate);}
+  .empty-state p{font-size:15px;}
+
+  #error-bar{background:#fdecea;color:#B23A3A;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;display:none;}
+  #error-bar.show{display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Deltek <span>Reconnect</span></div>
+    <div class="screen-label">Queue Admin — Prep View</div>
+  </div>
+  <div class="refresh-badge"><span class="dot"></span><span id="refreshLabel">Refreshing every 5s</span></div>
+</header>
+
+<div id="error-bar"></div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="statInQueue">—</div><div class="stat-label">In Queue</div></div>
+  <div class="stat"><div class="stat-num" id="statCollected">—</div><div class="stat-label">Collected</div></div>
+  <div class="stat"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total Registered</div></div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-head">
+    <span>Queue #</span><span>Name</span><span>T-Shirt</span><span>Employee ID</span>
+  </div>
+  <div id="queueList">
+    <div class="empty-state"><p>Loading queue…</p></div>
+  </div>
+</div>
+
+<script>
+// ── PASTE YOUR FLOW URLs HERE ──────────────────────────────────────────────
+const GET_QUEUE_URL  = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/cdfede8642b74332a9e969ecb11446c3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xLwi6hBx0uUFq-UXgyKOCBuL0j1KCflH141XYx_GdV8";
+const GET_STATS_URL  = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/25a59748dae1438f9115adb40206d285/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=LSeDZNpjB2ge6r4JDJB8arOgHiVJxcbB33p_6itduyo";
+// ──────────────────────────────────────────────────────────────────────────
+
+const REFRESH_MS = 5000;
+
+function showError(msg) {
+  const el = document.getElementById('error-bar');
+  el.textContent = msg;
+  el.className = 'show';
+}
+
+async function loadQueue() {
+  try {
+    const [qRes, sRes] = await Promise.all([
+      fetch(GET_QUEUE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
+      fetch(GET_STATS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    ]);
+
+    const qText = await qRes.text();
+    const sText = await sRes.text();
+    let qData = {}, sData = {};
+    try { qData = JSON.parse(qText); } catch {}
+    try { sData = JSON.parse(sText); } catch {}
+
+    document.getElementById('statInQueue').textContent  = sData.inQueue  ?? '—';
+    document.getElementById('statCollected').textContent = sData.collected ?? '—';
+    document.getElementById('statTotal').textContent    = sData.registered ?? '—';
+
+    const list = document.getElementById('queueList');
+    const queue = qData.queue || [];
+
+    if (queue.length === 0) {
+      list.innerHTML = '<div class="empty-state"><p>Queue is empty — no one waiting yet.</p></div>';
+      return;
+    }
+
+    list.innerHTML = queue.map((p, i) => `
+      <div class="queue-row">
+        <div class="queue-num">#${i + 1}</div>
+        <div class="queue-name">${p.crf9c_name}</div>
+        <div class="queue-tshirt">${p.crf9c_tshirtsize || '—'}</div>
+        <div class="queue-empid">${p.crf9c_employeeid || '—'}</div>
+      </div>`).join('');
+
+    document.getElementById('error-bar').className = '';
+  } catch (err) {
+    showError('Could not refresh queue. Check your flow URLs.');
+  }
+}
+
+loadQueue();
+setInterval(loadQueue, REFRESH_MS);
+</script>
+</body>
+</html>
