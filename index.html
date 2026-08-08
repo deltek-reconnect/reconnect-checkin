@@ -16,14 +16,36 @@
   html,body{margin:0;height:100%;}
   body{
     font-family:'Inter',sans-serif;color:#0A1E3D;min-height:100vh;
-    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+    position:relative;overflow:hidden;
     background:
       radial-gradient(circle at 15% 20%, rgba(95,212,255,0.18), transparent 45%),
       radial-gradient(circle at 85% 80%, rgba(95,212,255,0.14), transparent 50%),
       linear-gradient(135deg, var(--deep) 0%, var(--mid) 55%, var(--bright) 100%);
   }
   .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
-  .app{position:relative;z-index:1;max-width:560px;width:100%;padding:24px;}
+  .layout{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:24px;min-height:100vh;padding:24px;}
+  .app{max-width:520px;width:100%;flex-shrink:0;}
+  .queue-sidebar{
+    width:220px;flex-shrink:0;align-self:stretch;
+    background:rgba(255,255,255,0.08);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.15);border-radius:16px;
+    padding:20px 16px;max-height:70vh;display:flex;flex-direction:column;
+  }
+  .qs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .qs-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);}
+  .qs-count{font-family:'Archivo',sans-serif;font-weight:800;font-size:20px;color:var(--glow);}
+  .qs-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .qs-name{font-size:16px;font-weight:600;color:rgba(255,255,255,0.88);padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .qs-name.first{background:rgba(95,212,255,0.15);color:var(--glow);}
+  .qs-empty{font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:16px 0;}
+
+  @media(max-width:700px){
+    .layout{flex-direction:column;align-items:stretch;gap:16px;padding:16px;}
+    .queue-sidebar{width:100%;max-height:none;flex-direction:column;}
+    .qs-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;padding-bottom:4px;flex-wrap:nowrap;}
+    .qs-name{flex-shrink:0;white-space:nowrap;}
+    .app{max-width:100%;}
+  }
 
   .kicker{
     text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
@@ -98,6 +120,18 @@
   </g>
 </svg>
 
+<div class="layout">
+
+<div class="queue-sidebar">
+  <div class="qs-header">
+    <span class="qs-title">In Queue</span>
+    <span class="qs-count" id="qsCount">—</span>
+  </div>
+  <div class="qs-list" id="qsList">
+    <div class="qs-empty">No one waiting yet</div>
+  </div>
+</div>
+
 <div class="app">
   <div class="kicker">Deltek Reconnect 2026</div>
   <h1 class="welcome">Welcome to <span>Deltek Reconnect</span></h1>
@@ -114,8 +148,11 @@
   <p class="footer-hint">Having trouble? A member of our team at the help desk is happy to assist.</p>
 </div>
 
+</div>
+
 <script>
 const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
+const GET_QUEUE_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/cdfede8642b74332a9e969ecb11446c3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xLwi6hBx0uUFq-UXgyKOCBuL0j1KCflH141XYx_GdV8";
 const AUTO_RESET_MS = 7000;
 
 const CHECK_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -175,6 +212,9 @@ async function joinQueue() {
       showMessage('warning', "You're already in the queue", 'Please wait — staff can see you coming.');
     } else if (data.message === 'already_collected' || text.includes('already_collected')) {
       showMessage('success', 'Already collected', 'Your items were already picked up. Enjoy the event!');
+    } else if (text.includes('rejoined_queue')) {
+      showMessage('success', "Welcome back!", "You've rejoined the queue — staff can see you.");
+      input.value = '';
     } else {
       showMessage('error', 'No match found', "This email isn't on the list. Please see the help desk.");
     }
@@ -184,7 +224,30 @@ async function joinQueue() {
 
   btn.disabled = false;
   btn.textContent = 'Join Queue';
+  loadQueue();
 }
+
+async function loadQueue() {
+  try {
+    const res = await fetch(GET_QUEUE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch {}
+    const queue = data.queue || [];
+    document.getElementById('qsCount').textContent = queue.length || '0';
+    const list = document.getElementById('qsList');
+    if (queue.length === 0) {
+      list.innerHTML = '<div class="qs-empty">No one waiting yet</div>';
+    } else {
+      list.innerHTML = queue.map((p, i) =>
+        `<div class="qs-name${i === 0 ? ' first' : ''}">${p.crf9c_name || p.name || '—'}</div>`
+      ).join('');
+    }
+  } catch {}
+}
+
+loadQueue();
+setInterval(loadQueue, 5000);
 </script>
 </body>
 </html>
