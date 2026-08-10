@@ -13,7 +13,7 @@ html{height:100%;}
 body{
   font-family:'Plus Jakarta Sans',sans-serif;
   min-height:100dvh;
-  background:#020c24;
+  background:#0a1f6e;
   color:#fff;
   overflow-x:hidden;
   padding-bottom:env(safe-area-inset-bottom);
@@ -22,7 +22,7 @@ body{
 /* Background — single gradient, no animated layers */
 .bg{
   position:fixed;inset:0;z-index:0;
-  background:linear-gradient(160deg, #020c24 0%, #071840 55%, #030e1e 100%);
+  background:linear-gradient(160deg, #0a1f6e 0%, #1240a8 50%, #0c277e 100%);
 }
 
 .page{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100dvh;padding:0 0 24px;}
@@ -41,9 +41,11 @@ body{
 .eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:40px;padding:5px 14px 5px 10px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.82);margin-bottom:18px;letter-spacing:0.03em;}
 .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
-h1{font-size:clamp(30px,8vw,40px);font-weight:800;line-height:1.15;margin-bottom:8px;letter-spacing:-0.02em;}
+h1{font-size:clamp(26px,7.5vw,38px);font-weight:800;line-height:1.15;margin-bottom:10px;letter-spacing:-0.02em;white-space:nowrap;}
 h1 .grd{background:linear-gradient(90deg,#fff 0%,#93C5FD 45%,#60A5FA 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.sub{font-size:15px;color:rgba(255,255,255,0.52);margin-bottom:28px;line-height:1.5;}
+.location{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:rgba(147,197,253,0.8);margin-bottom:22px;}
+.location svg{flex-shrink:0;opacity:0.85;}
+.sub{font-size:15px;color:rgba(255,255,255,0.52);margin-bottom:28px;line-height:1.5;white-space:nowrap;}
 
 /* Form card */
 .form-card{background:rgba(7,30,80,0.75);border:1px solid rgba(96,165,250,0.18);border-radius:22px;padding:26px 22px;}
@@ -94,8 +96,12 @@ h1 .grd{background:linear-gradient(90deg,#fff 0%,#93C5FD 45%,#60A5FA 100%);-webk
       <div class="dot"></div>
       Check-In is Open
     </div>
-    <h1>Welcome to<br><span class="grd">Reconnect 2026</span></h1>
-    <p class="sub">Join the queue with your registered email and we'll call you up shortly.</p>
+    <h1><span class="grd">Deltek Reconnect 2026</span></h1>
+    <div class="location">
+      <svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.75A1.75 1.75 0 1 1 7 3.25a1.75 1.75 0 0 1 0 3.5z" fill="#93C5FD"/></svg>
+      Goa, India
+    </div>
+    <p class="sub">Join the queue with your registered email</p>
 
     <div class="form-card">
       <label>Your email</label>
