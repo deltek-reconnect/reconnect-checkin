@@ -81,6 +81,33 @@
 
   #error-bar{background:#fdecea;color:#B23A3A;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;display:none;}
   #error-bar.show{display:block;}
+
+  /* Ad-hoc walk-up check-in */
+  .adhoc-section{margin-top:20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:24px;}
+  .adhoc-title{font-family:'Archivo',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;}
+  .adhoc-sub{font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:16px;}
+  .adhoc-row{display:flex;gap:10px;}
+  .adhoc-input{flex:1;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.25);border-radius:10px;padding:13px 16px;font-size:15px;color:#fff;font-family:'Inter',sans-serif;}
+  .adhoc-input::placeholder{color:rgba(255,255,255,0.4);}
+  .adhoc-input:focus{outline:none;border-color:var(--glow);}
+  .btn-find{background:var(--bright);color:#fff;border:none;border-radius:10px;padding:13px 22px;font-weight:700;font-size:15px;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+  .btn-find:disabled{opacity:0.5;cursor:not-allowed;}
+  .adhoc-result{margin-top:16px;}
+  /* Item delivery checkboxes */
+  .item-checks{display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1.5px solid #e2e8f0;}
+  .item-check{display:flex;align-items:center;gap:10px;flex:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .2s,background .2s;user-select:none;}
+  .item-check input[type=checkbox]{width:18px;height:18px;accent-color:#0052CC;cursor:pointer;flex-shrink:0;}
+  .item-check .ic-label{font-size:13px;font-weight:700;color:#374151;}
+  .item-check .ic-sub{font-size:11px;color:#9ca3af;margin-top:2px;}
+  .item-check.checked{border-color:#16a34a;background:#f0fdf4;}
+  .item-check.checked .ic-label{color:#15803d;}
+  /* Status badges */
+  .status-badge{display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;border-radius:6px;padding:4px 10px;margin-bottom:16px;}
+  .status-waiting{background:#dbeafe;color:#1d4ed8;}
+  .status-collected{background:#dcfce7;color:#15803d;}
+  .status-skipped{background:#fef9c3;color:#92400e;}
+  .status-partial{background:#fff7ed;color:#c2410c;}
+  .status-unknown{background:#f3f4f6;color:#6b7280;}
 </style>
 </head>
 <body>
@@ -117,6 +144,17 @@
   </div>
 </div>
 
+<!-- Search User section -->
+<div class="adhoc-section" style="border-color:rgba(139,92,246,0.45);margin-top:20px;">
+  <div class="adhoc-title">🔍 Search User</div>
+  <div class="adhoc-sub">Find any employee regardless of status — use this to complete a partial collection or verify what someone received.</div>
+  <div class="adhoc-row">
+    <input class="adhoc-input" id="searchEmail" type="email" placeholder="employee@company.com" onkeydown="if(event.key==='Enter')searchUser()">
+    <button class="btn-find" id="btnSearch" onclick="searchUser()" style="background:#7c3aed;">Search</button>
+  </div>
+  <div class="adhoc-result" id="searchResult"></div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -125,6 +163,8 @@ const GET_CURRENT_URL    = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environmen
 const GET_STATS_URL      = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/25a59748dae1438f9115adb40206d285/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=LSeDZNpjB2ge6r4JDJB8arOgHiVJxcbB33p_6itduyo";
 const MARK_COLLECTED_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/f1cdb7eafab64479bcb1e115cb8a9cd6/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=wTuHOq_nw-0OsmvIa9pzbKYh7zlKu4DpA5cZ3YCKkqg";
 const MARK_SKIPPED_URL   = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/7f5bdb8bce6c41e3894cdd4d4a074ca0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HoEu-lH94eQjwMobXd0CQKOfYGKg6M5xIlB7Ql20KWM";
+const SEARCH_USER_URL    = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/13/workflows/d28f333cdae3422f965efc4416a6f57c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZAdeWq9OCxdlOt2K0l7r914RpE5aUsSJGYhg8StNvrM"; // lookup-by-email flow
+const SEARCH_EMPLOYEE_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/07/workflows/8a39cbcb1f5646d49d3ff890d866a404/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=50Vnkl1Jx_sw1_zMmAyu-T_R8SVbEOget_fDnZdl0l0"; // employee table lookup
 // ──────────────────────────────────────────────────────────────────────────
 
 const REFRESH_MS = 5000;
@@ -150,6 +190,8 @@ function renderPerson(p) {
     return;
   }
   currentId = p.crf9c_registrationqueueid || p.crf9c_registrationqueuesid || p.id;
+  const idChecked = getChecked(currentId, 'idcard');
+  const tsChecked = getChecked(currentId, 'tshirt');
   document.getElementById('personArea').innerHTML = `
     <div class="person-card">
       <div class="now-serving">Now checking in</div>
@@ -160,6 +202,16 @@ function renderPerson(p) {
         <div class="detail-item"><label>T-Shirt Size</label><p>${p.crf9c_tshirtsize || p.tshirtSize || '—'}</p></div>
         <div class="detail-item"><label>Team</label><p>${p.crf9c_team || p.team || '—'}</p></div>
         <div class="detail-item"><label>Email</label><p>${p.crf9c_email || p.email || '—'}</p></div>
+      </div>
+      <div class="item-checks">
+        <label class="item-check${idChecked ? ' checked' : ''}" id="chk-idcard">
+          <input type="checkbox" id="cb-idcard" ${idChecked ? 'checked' : ''} onchange="toggleItem('idcard')">
+          <div><div class="ic-label">🪪 ID Card</div><div class="ic-sub">Check when given</div></div>
+        </label>
+        <label class="item-check${tsChecked ? ' checked' : ''}" id="chk-tshirt">
+          <input type="checkbox" id="cb-tshirt" ${tsChecked ? 'checked' : ''} onchange="toggleItem('tshirt')">
+          <div><div class="ic-label">👕 T-Shirt</div><div class="ic-sub">Check when given</div></div>
+        </label>
       </div>
     </div>`;
   document.getElementById('btnCollect').disabled = false;
@@ -191,25 +243,198 @@ async function loadCurrent() {
 }
 
 async function markAction(type) {
-  if (!currentId) return;  const btnCollect = document.getElementById('btnCollect');
+  if (!currentId) return;
+  const btnCollect = document.getElementById('btnCollect');
   const btnSkip = document.getElementById('btnSkip');
   btnCollect.disabled = true;
   btnSkip.disabled = true;
-
   const url = type === 'collected' ? MARK_COLLECTED_URL : MARK_SKIPPED_URL;
   try {
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: currentId })
-    });
-    showToast(type === 'collected' ? '✓ Marked as collected' : '↩ Moved to skipped');
+    const idCard = document.getElementById('cb-idcard')?.checked ?? false;
+    const tShirt = document.getElementById('cb-tshirt')?.checked ?? false;
+    const status = (idCard && tShirt) ? 'Collected' : 'Partially Collected';
+    await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:currentId, idCard, tShirt, status: type==='collected'?status:undefined}) });
+    if (type === 'collected') {
+      const given = [idCard ? '🪪 ID Card' : '', tShirt ? '👕 T-Shirt' : ''].filter(Boolean);
+      showToast(given.length === 2 ? '✓ Fully collected' : `⚠ Partially collected — given: ${given.join(', ') || 'none'}`);
+    } else {
+      showToast('↩ Moved to skipped');
+    }
     await loadCurrent();
   } catch (err) {
     showToast('Error — please try again');
     btnCollect.disabled = false;
     btnSkip.disabled = false;
   }
+}
+
+const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
+const GET_QUEUE_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/cdfede8642b74332a9e969ecb11446c3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xLwi6hBx0uUFq-UXgyKOCBuL0j1KCflH141XYx_GdV8";
+
+function getChecked(id, item) {
+  try { return localStorage.getItem(`fds_${id}_${item}`) === 'true'; } catch { return false; }
+}
+function saveChecked(id, item, val) {
+  try { localStorage.setItem(`fds_${id}_${item}`, String(val)); } catch {}
+}
+
+function toggleItem(item) {
+  const cb = document.getElementById(`cb-${item}`);
+  const lbl = document.getElementById(`chk-${item}`);
+  saveChecked(currentId, item, cb.checked);
+  lbl.classList.toggle('checked', cb.checked);
+}
+
+const SEARCH_STATUS_MAP = {
+  'Waiting':             ['status-badge status-waiting',   '● Waiting'],
+  'Collected':           ['status-badge status-collected', '✓ Collected'],
+  'Skipped':             ['status-badge status-skipped',   '↩ Skipped'],
+  'Partially Collected': ['status-badge status-partial',   '⚠ Partially Collected'],
+};
+
+async function searchUser() {
+  const email = document.getElementById('searchEmail').value.trim();
+  if (!email) return;
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true; btn.textContent = 'Searching…';
+  const resultEl = document.getElementById('searchResult');
+  resultEl.innerHTML = '<p style="color:rgba(255,255,255,0.6);font-size:14px;padding:8px 0;">Checking queue records…</p>';
+  try {
+    // Step 1: search registration queue
+    const res = await fetch(SEARCH_USER_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+    const data = await res.json().catch(()=>({}));
+    if (data.person) {
+      renderSearchPerson(data.person);
+    } else if (SEARCH_EMPLOYEE_URL) {
+      // Step 2: not in queue — check employee table
+      resultEl.innerHTML = '<p style="color:rgba(255,255,255,0.6);font-size:14px;padding:8px 0;">Not in queue — checking employee records…</p>';
+      const empRes = await fetch(SEARCH_EMPLOYEE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+      const empData = await empRes.json().catch(()=>({}));
+      if (empData.employee) renderEmployeePerson(empData.employee);
+      else resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);">✗ No record found in queue or employee database.</p>';
+    } else {
+      resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);">✗ Not found in queue. To also search the employee table, configure SEARCH_EMPLOYEE_URL.</p>';
+    }
+  } catch {
+    resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;">Error — check flow URLs.</p>';
+  }
+  btn.disabled = false; btn.textContent = 'Search';
+}
+
+function renderSearchPerson(p) {
+  const sId = p.crf9c_registrationqueueid || p.crf9c_registrationqueuesid || p.id;
+  const idC = sId ? getChecked(sId, 'idcard') : false;
+  const tsC = sId ? getChecked(sId, 'tshirt') : false;
+  const status = p.crf9c_statustext || p.status || 'unknown';
+  const [badgeClass, badgeText] = SEARCH_STATUS_MAP[status] || ['status-badge status-unknown', '— ' + status];
+  const closeBtn = `<button class="btn btn-skip" style="flex:0 0 auto;width:auto;padding:18px 22px;" onclick="document.getElementById('searchResult').innerHTML='';document.getElementById('searchEmail').value='';">✕ Close</button>`;
+  let actionBtn = '';
+  if (status === 'Collected') {
+    actionBtn = `<div style="flex:1;padding:14px;background:#fef2f2;border:2px solid #dc2626;border-radius:10px;text-align:center;"><div style="color:#dc2626;font-weight:800;font-size:15px;">✓ Already Collected</div><div style="color:#9ca3af;font-size:11px;margin-top:2px;">Items collected previously</div></div>`;
+  } else if (sId) {
+    actionBtn = `<button class="btn btn-collect" style="flex:1;width:auto;" onclick="markSearchCollected('${sId}')">✓ Mark as Collected</button>`;
+  }
+  const cancelBtn = `<button onclick="document.getElementById('searchResult').innerHTML='';document.getElementById('searchEmail').value='';" style="flex:0 0 auto;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;">\u2715 Cancel</button>`;
+  document.getElementById('searchResult').innerHTML = `
+    <div class="person-card" style="margin-top:0;">
+      <div class="now-serving" style="color:#7c3aed;">Search Result</div>
+      <div class="person-name">${p.crf9c_name||p.name||'—'}</div>
+      <span class="${badgeClass}">${badgeText}</span>
+      <div class="details">
+        <div class="detail-item"><label>Employee ID</label><p>${p.crf9c_employeeid||p.employeeId||'—'}</p></div>
+        <div class="detail-item"><label>T-Shirt Size</label><p>${p.crf9c_tshirtsize||p.tshirtSize||'—'}</p></div>
+        <div class="detail-item"><label>Team</label><p>${p.crf9c_team||p.team||'—'}</p></div>
+        <div class="detail-item"><label>Email</label><p>${p.crf9c_email||p.email||'—'}</p></div>
+      </div>
+      <div class="item-checks">
+        <label class="item-check${idC?' checked':''}" id="search-chk-idcard">
+          <input type="checkbox" id="search-cb-idcard" ${idC?'checked':''} onchange="toggleSearchItem('idcard','${sId||''}')">
+          <div><div class="ic-label">🪪 ID Card</div><div class="ic-sub" id="search-sub-idcard">${idC?'Given':'Not given'}</div></div>
+        </label>
+        <label class="item-check${tsC?' checked':''}" id="search-chk-tshirt">
+          <input type="checkbox" id="search-cb-tshirt" ${tsC?'checked':''} onchange="toggleSearchItem('tshirt','${sId||''}')">
+          <div><div class="ic-label">👕 T-Shirt</div><div class="ic-sub" id="search-sub-tshirt">${tsC?'Given':'Not given'}</div></div>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        ${actionBtn}
+        ${cancelBtn}
+      </div>
+    </div>`;
+}
+
+function toggleSearchItem(item, id) {
+  const cb = document.getElementById(`search-cb-${item}`);
+  const lbl = document.getElementById(`search-chk-${item}`);
+  const sub = document.getElementById(`search-sub-${item}`);
+  if (id) saveChecked(id, item, cb.checked);
+  lbl.classList.toggle('checked', cb.checked);
+  if (sub) sub.textContent = cb.checked ? 'Given' : 'Not given';
+}
+
+async function markSearchCollected(id) {
+  try {
+    const idCard = document.getElementById('search-cb-idcard')?.checked ?? false;
+    const tShirt = document.getElementById('search-cb-tshirt')?.checked ?? false;
+    const status = (idCard && tShirt) ? 'Collected' : 'Partially Collected';
+    await fetch(MARK_COLLECTED_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, idCard, tShirt, status}) });
+    const given = [idCard?'🪪 ID Card':'', tShirt?'👕 T-Shirt':''].filter(Boolean);
+    showToast(given.length===2 ? '✓ Fully collected' : `⚠ Partially collected — given: ${given.join(', ')||'none'}`);
+    document.getElementById('searchResult').innerHTML = '';
+    document.getElementById('searchEmail').value = '';
+    await loadCurrent();
+  } catch { showToast('Error — please try again'); }
+}
+
+function renderEmployeePerson(emp) {
+  const email = emp.crf9c_email || emp.email || '';
+  const closeBtn = `<button class="btn btn-skip" style="flex:0 0 auto;width:auto;padding:18px 22px;" onclick="document.getElementById('searchResult').innerHTML='';document.getElementById('searchEmail').value='';">✕ Close</button>`;
+  document.getElementById('searchResult').innerHTML = `
+    <div class="person-card" style="margin-top:0;">
+      <div class="now-serving" style="color:#d97706;">Employee — not registered in queue</div>
+      <div class="person-name">${emp.crf9c_name||emp.name||'—'}</div>
+      <span class="status-badge status-unknown">— Not in Queue</span>
+      <div class="details">
+        <div class="detail-item"><label>Employee ID</label><p>${emp.crf9c_employeeid||'—'}</p></div>
+        <div class="detail-item"><label>T-Shirt Size</label><p>${emp.crf9c_tshirtsize||'—'}</p></div>
+        <div class="detail-item"><label>Team</label><p>${emp.crf9c_team||'—'}</p></div>
+        <div class="detail-item"><label>Email</label><p>${email}</p></div>
+      </div>
+      <div class="item-checks">
+        <label class="item-check" id="emp-chk-idcard">
+          <input type="checkbox" id="emp-cb-idcard" onchange="document.getElementById('emp-chk-idcard').classList.toggle('checked',this.checked)">
+          <div><div class="ic-label">🪪 ID Card</div><div class="ic-sub">Check when given</div></div>
+        </label>
+        <label class="item-check" id="emp-chk-tshirt">
+          <input type="checkbox" id="emp-cb-tshirt" onchange="document.getElementById('emp-chk-tshirt').classList.toggle('checked',this.checked)">
+          <div><div class="ic-label">👕 T-Shirt</div><div class="ic-sub">Check when given</div></div>
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-collect" style="flex:1;width:auto;" onclick="markEmployeeCollected('${email}')">✓ Mark as Collected</button>
+        ${closeBtn}
+      </div>
+    </div>`;
+}
+
+async function markEmployeeCollected(email) {
+  const idCard = document.getElementById('emp-cb-idcard')?.checked ?? false;
+  const tShirt = document.getElementById('emp-cb-tshirt')?.checked ?? false;
+  const status = (idCard && tShirt) ? 'Collected' : 'Partially Collected';
+  try {
+    await fetch(FLOW_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+    const sr = await fetch(SEARCH_USER_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
+    const sd = await sr.json().catch(()=>({}));
+    if (!sd.person) { showToast('Error — could not create queue entry'); return; }
+    const id = sd.person.crf9c_registrationqueueid || sd.person.id;
+    if (id) { saveChecked(id, 'idcard', idCard); saveChecked(id, 'tshirt', tShirt); }
+    await fetch(MARK_COLLECTED_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, idCard, tShirt, status}) });
+    const given = [idCard?'🪪 ID Card':'', tShirt?'👕 T-Shirt':''].filter(Boolean);
+    showToast(given.length===2 ? '✓ Fully collected' : `⚠ Partially collected — given: ${given.join(', ')||'none'}`);
+    document.getElementById('searchResult').innerHTML = '';
+    document.getElementById('searchEmail').value = '';
+    await loadCurrent();
+  } catch { showToast('Error — please try again'); }
 }
 
 loadCurrent();
