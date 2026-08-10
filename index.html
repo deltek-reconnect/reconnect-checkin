@@ -1,310 +1,204 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Deltek Reconnect 2026 — Check-in</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Reconnect 2026 — Check In</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --deep:#081B3F; --mid:#0F3A8A; --bright:#1E6FE0; --glow:#5FD4FF;
-    --sage:#2F5D3F; --sage-bg:#E4EFE7; --amber:#7A5C00; --amber-bg:#FFF8E1;
-    --coral:#B23A3A; --coral-bg:#F7E5E5; --slate:#5C6B73;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;}
-  body{
-    font-family:'Inter',sans-serif;color:#0A1E3D;min-height:100vh;
-    position:relative;overflow:hidden;
-    background:
-      radial-gradient(circle at 15% 20%, rgba(95,212,255,0.18), transparent 45%),
-      radial-gradient(circle at 85% 80%, rgba(95,212,255,0.14), transparent 50%),
-      linear-gradient(135deg, var(--deep) 0%, var(--mid) 55%, var(--bright) 100%);
-  }
-  .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
-  .layout{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:24px;min-height:100vh;padding:24px;}
-  .app{max-width:520px;width:100%;flex-shrink:0;}
-  .queue-sidebar{
-    width:220px;flex-shrink:0;align-self:stretch;
-    padding:20px 16px;max-height:70vh;display:flex;flex-direction:column;
-  }
-  .qs-header{text-align:center;margin-bottom:14px;}
-  .qs-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.6);}
-  .qs-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;perspective:800px;}
-  .qs-name{font-size:16px;font-weight:600;color:rgba(255,255,255,0.88);padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.07);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .qs-name.first{background:rgba(95,212,255,0.15);color:var(--glow);}
-  .qs-empty{font-size:12px;color:rgba(255,255,255,0.35);text-align:center;padding:16px 0;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{height:100%;}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  min-height:100dvh;
+  background:#020c24;
+  color:#fff;
+  overflow-x:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
 
-  @media(max-width:700px){
-    .layout{flex-direction:row;align-items:stretch;gap:10px;padding:12px;min-height:100vh;}
-    .queue-sidebar{width:88px;flex-shrink:0;max-height:none;padding:14px 8px;}
-    .qs-list{flex-direction:column;overflow-y:auto;overflow-x:hidden;gap:4px;}
-    .qs-name{font-size:11px;padding:7px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .qs-title{font-size:9px;letter-spacing:0.12em;}
-    .app{flex:1;min-width:0;max-width:100%;}
-  }
+/* Background */
+.bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 110%, rgba(0,82,204,0.3), transparent),
+    radial-gradient(ellipse 80% 50% at 80% 0%, rgba(0,60,180,0.25), transparent),
+    radial-gradient(ellipse 100% 70% at 0% 30%, rgba(0,40,140,0.3), transparent),
+    linear-gradient(160deg, #020c24 0%, #071840 50%, #030e1e 100%);
+}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+.orb1{width:300px;height:300px;background:rgba(0,100,255,0.13);bottom:-80px;right:-80px;animation:float1 9s ease-in-out infinite alternate;}
+.orb2{width:250px;height:250px;background:rgba(0,60,200,0.18);top:-60px;left:-60px;animation:float2 11s ease-in-out infinite alternate;}
+@keyframes float1{from{transform:translate(0,0);}to{transform:translate(-30px,-40px);}}
+@keyframes float2{from{transform:translate(0,0);}to{transform:translate(40px,30px);}}
 
-  .kicker{
-    text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
-    letter-spacing:0.18em;color:rgba(255,255,255,0.75);text-transform:uppercase;margin-bottom:14px;
-  }
-  .welcome{
-    text-align:center;font-family:'Archivo',sans-serif;font-weight:800;color:#fff;
-    font-size:clamp(26px,5vw,34px);line-height:1.15;margin:0 0 10px;letter-spacing:-0.01em;
-    text-shadow:0 2px 20px rgba(0,0,0,0.2);
-  }
-  .welcome span{color:var(--glow);}
-  .tagline{text-align:center;color:rgba(255,255,255,0.85);font-size:15px;margin:0 0 28px;}
+.page{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100dvh;padding:0 0 24px;}
 
-  .panel{
-    background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:36px 32px;
-    box-shadow:0 20px 60px rgba(4,20,50,0.35), 0 0 0 1px rgba(95,212,255,0.15);
-  }
-  .panel .instruction{color:var(--slate);font-size:14px;margin:0 0 22px;text-align:center;}
+/* Queue strip */
+.queue-strip{padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;}
+.qs-label{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:10px;}
+.qs-scroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
+.qs-scroll::-webkit-scrollbar{display:none;}
+.qs-chip{flex-shrink:0;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.13);border-radius:40px;padding:7px 14px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.72);white-space:nowrap;}
+.qs-chip.first{background:rgba(30,111,224,0.25);border-color:rgba(96,165,250,0.5);color:#93C5FD;}
+.qs-empty{font-size:12px;color:rgba(255,255,255,0.3);padding:4px 0;}
 
-  .kiosk-form input{
-    width:100%;font-size:20px;padding:18px 16px;border:2px solid #0A1E3D;border-radius:8px;
-    font-family:'IBM Plex Mono',monospace;margin-bottom:14px;transition:border-color .15s, box-shadow .15s;
-  }
-  .kiosk-form input:focus{outline:none;border-color:var(--bright);box-shadow:0 0 0 4px rgba(30,111,224,0.15);}
-  .kiosk-form button{
-    width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:17px;
-    background:linear-gradient(135deg,var(--bright),var(--mid));color:#fff;border:none;border-radius:8px;
-    padding:16px;cursor:pointer;letter-spacing:0.02em;transition:transform .1s, opacity .15s;
-  }
-  .kiosk-form button:disabled{opacity:0.5;cursor:not-allowed;}
-  .kiosk-form button:hover:not(:disabled){transform:translateY(-1px);}
-  .kiosk-form button:active:not(:disabled){transform:translateY(0);}
+/* Center content */
+.content{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 22px 16px;}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,0.08);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);border-radius:40px;padding:5px 14px 5px 10px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.82);margin-bottom:18px;letter-spacing:0.03em;}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+h1{font-size:clamp(30px,8vw,40px);font-weight:800;line-height:1.15;margin-bottom:8px;letter-spacing:-0.02em;}
+h1 .grd{background:linear-gradient(90deg,#fff 0%,#93C5FD 45%,#60A5FA 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sub{font-size:15px;color:rgba(255,255,255,0.52);margin-bottom:28px;line-height:1.5;}
 
-  .message{padding:18px 20px;border-radius:10px;font-size:15px;margin-top:18px;display:none;align-items:flex-start;gap:12px;}
-  .message.show{display:flex;}
-  .message.success{background:var(--sage-bg);color:var(--sage);border:1px solid var(--sage);}
-  .message.warning{background:var(--amber-bg);color:var(--amber);border:1px solid #e0c84a;}
-  .message.error{background:var(--coral-bg);color:var(--coral);border:1px solid var(--coral);}
-  .message strong{display:block;font-family:'Archivo',sans-serif;font-size:16px;margin-bottom:4px;}
-  .message .icon{flex-shrink:0;width:22px;height:22px;margin-top:1px;}
+/* Form card */
+.form-card{background:rgba(255,255,255,0.06);backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.12);border-radius:22px;padding:26px 22px;}
+.form-card label{display:block;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:9px;}
+.form-card input{display:block;width:100%;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:16px 18px;font-size:18px;font-family:monospace;color:#fff;margin-bottom:14px;transition:border-color .2s,background .2s;-webkit-appearance:none;}
+.form-card input:focus{outline:none;border-color:rgba(96,165,250,0.8);background:rgba(30,111,224,0.1);}
+.form-card input::placeholder{color:rgba(255,255,255,0.22);}
+.join-btn{display:block;width:100%;padding:17px;border:none;border-radius:14px;font-size:17px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(135deg,#0052CC,#1E6FE0);color:#fff;cursor:pointer;letter-spacing:0.01em;box-shadow:0 6px 30px rgba(0,82,204,0.45);transition:transform .1s,box-shadow .2s;-webkit-tap-highlight-color:transparent;}
+.join-btn:active{transform:scale(0.97);box-shadow:0 2px 14px rgba(0,82,204,0.3);}
+.join-btn:disabled{opacity:0.55;}
+.msg{display:none;margin-top:14px;padding:14px 16px;border-radius:12px;font-size:14px;font-weight:500;line-height:1.5;}
+.msg.success{background:rgba(74,222,128,0.13);border:1px solid rgba(74,222,128,0.32);color:#4ade80;}
+.msg.warn{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.28);color:#fbbf24;}
+.msg.error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.28);color:#f87171;}
 
-  .footer-hint{text-align:center;color:rgba(255,255,255,0.65);font-size:12.5px;margin-top:22px;}
+/* Activity card */
+.activity-card{margin:18px 22px 0;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:22px;padding:22px 22px;}
+.act-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.act-title{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.42);font-weight:600;}
+.act-counter{font-size:11px;color:rgba(255,255,255,0.28);}
+.fact-wrap{min-height:80px;position:relative;touch-action:pan-y;}
+.fact{display:none;}
+.fact.active{display:block;}
+.fact-emoji{font-size:28px;margin-bottom:10px;}
+.fact-text{font-size:15px;font-weight:500;color:rgba(255,255,255,0.86);line-height:1.65;}
+.fact-nav{display:flex;gap:10px;margin-top:18px;align-items:center;}
+.fn-btn{flex:1;padding:11px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.65);font-size:14px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:background .2s;-webkit-tap-highlight-color:transparent;}
+.fn-btn:active{background:rgba(30,111,224,0.2);}
+.fn-dots{display:flex;gap:5px;justify-content:center;flex:0 0 auto;}
+.fn-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.18);transition:background .3s;}
+.fn-dot.on{background:rgba(96,165,250,0.9);}
 </style>
 </head>
 <body>
+<div class="bg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
 
-<svg class="bg-fx" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-  <g stroke="#5FD4FF" stroke-width="1" opacity="0.35">
-    <line x1="80" y1="120" x2="240" y2="60"/><line x1="240" y1="60" x2="420" y2="150"/>
-    <line x1="420" y1="150" x2="620" y2="70"/><line x1="620" y1="70" x2="740" y2="180"/>
-    <line x1="80" y1="120" x2="180" y2="260"/><line x1="180" y1="260" x2="420" y2="150"/>
-    <line x1="420" y1="150" x2="520" y2="320"/><line x1="520" y1="320" x2="740" y2="180"/>
-    <line x1="180" y1="260" x2="120" y2="440"/><line x1="520" y1="320" x2="640" y2="500"/>
-    <line x1="120" y1="440" x2="320" y2="560"/><line x1="320" y1="560" x2="640" y2="500"/>
-    <line x1="320" y1="560" x2="260" y2="720"/><line x1="640" y1="500" x2="560" y2="700"/>
-    <line x1="260" y1="720" x2="560" y2="700"/>
-  </g>
-  <g fill="#5FD4FF">
-    <circle cx="80" cy="120" r="4"><animate attributeName="opacity" values="0.3;0.9;0.3" dur="4s" repeatCount="indefinite"/></circle>
-    <circle cx="240" cy="60" r="3.5"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="5s" repeatCount="indefinite"/></circle>
-    <circle cx="420" cy="150" r="5"><animate attributeName="opacity" values="0.4;1;0.4" dur="3.5s" repeatCount="indefinite"/></circle>
-    <circle cx="620" cy="70" r="3.5"><animate attributeName="opacity" values="0.7;0.3;0.7" dur="4.5s" repeatCount="indefinite"/></circle>
-    <circle cx="740" cy="180" r="4"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="5.5s" repeatCount="indefinite"/></circle>
-    <circle cx="180" cy="260" r="4.5"><animate attributeName="opacity" values="0.5;0.9;0.5" dur="4s" repeatCount="indefinite"/></circle>
-    <circle cx="520" cy="320" r="4"><animate attributeName="opacity" values="0.3;0.7;0.3" dur="6s" repeatCount="indefinite"/></circle>
-    <circle cx="120" cy="440" r="3.5"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="4.2s" repeatCount="indefinite"/></circle>
-    <circle cx="640" cy="500" r="5"><animate attributeName="opacity" values="0.4;0.9;0.4" dur="3.8s" repeatCount="indefinite"/></circle>
-    <circle cx="320" cy="560" r="4"><animate attributeName="opacity" values="0.5;0.8;0.5" dur="5.2s" repeatCount="indefinite"/></circle>
-    <circle cx="260" cy="720" r="3.5"><animate attributeName="opacity" values="0.3;0.7;0.3" dur="4.7s" repeatCount="indefinite"/></circle>
-    <circle cx="560" cy="700" r="4.5"><animate attributeName="opacity" values="0.6;0.9;0.6" dur="3.6s" repeatCount="indefinite"/></circle>
-  </g>
-</svg>
+<div class="page">
 
-<div class="layout">
-
-<div class="queue-sidebar">
-  <div class="qs-header">
-    <span class="qs-title">In Queue</span>
-  </div>
-  <div class="qs-list" id="qsList">
-    <div class="qs-empty">No one waiting yet</div>
-  </div>
-</div>
-
-<div class="app">
-  <div class="kicker">Deltek Reconnect 2026</div>
-  <h1 class="welcome">Welcome to <span>Deltek Reconnect</span></h1>
-  <p class="tagline">Let's get you checked in.</p>
-
-  <div class="panel">
-    <p class="instruction">Enter the email you registered with to join the check-in queue.</p>
-    <div class="kiosk-form">
-      <input type="email" id="emailInput" placeholder="name@company.com" autocomplete="off" autofocus>
-      <button id="joinBtn">Join Queue</button>
+  <div class="queue-strip">
+    <div class="qs-label">In Queue</div>
+    <div class="qs-scroll" id="qsList">
+      <div class="qs-empty">Loading…</div>
     </div>
-    <div class="message" id="msgBox"></div>
   </div>
-  <p class="footer-hint">Having trouble? A member of our team at the help desk is happy to assist.</p>
-</div>
+
+  <div class="content">
+    <div class="eyebrow">
+      <div class="dot"></div>
+      Check-In is Open
+    </div>
+    <h1>Welcome to<br><span class="grd">Reconnect 2026</span></h1>
+    <p class="sub">Join the queue with your registered email and we'll call you up shortly.</p>
+
+    <div class="form-card">
+      <label>Your email</label>
+      <input type="email" id="emailInput" placeholder="name@company.com" autocomplete="email" inputmode="email">
+      <button class="join-btn" id="joinBtn" onclick="joinQueue()">Join the Queue</button>
+      <div class="msg" id="msgBox"></div>
+    </div>
+  </div>
+
+  <div class="activity-card">
+    <div class="act-header">
+      <div class="act-title">While you wait</div>
+      <div class="act-counter" id="factCnt"></div>
+    </div>
+    <div class="fact-wrap" id="factWrap">
+      <div class="fact active"><div class="fact-emoji">🚀</div><div class="fact-text">Deltek serves over <strong>30,000 customers</strong> across government contracting, architecture, engineering, and more — all project-based industries.</div></div>
+      <div class="fact"><div class="fact-emoji">🌏</div><div class="fact-text">Reconnect 2026 brings together professionals from <strong>across the region</strong> to share ideas, build connections, and explore what's next.</div></div>
+      <div class="fact"><div class="fact-emoji">💡</div><div class="fact-text">The average employee saves <strong>4+ hours per week</strong> after switching to integrated project management software.</div></div>
+      <div class="fact"><div class="fact-emoji">🤝</div><div class="fact-text">Research shows that <strong>85% of jobs</strong> are filled through networking — so every conversation today could matter more than you think!</div></div>
+      <div class="fact"><div class="fact-emoji">📊</div><div class="fact-text">Companies using real-time project dashboards are <strong>2.5× more likely</strong> to deliver projects on time and within budget.</div></div>
+    </div>
+    <div class="fact-nav">
+      <button class="fn-btn" onclick="moveFact(-1)">← Prev</button>
+      <div class="fn-dots" id="fnDots"></div>
+      <button class="fn-btn" onclick="moveFact(1)">Next →</button>
+    </div>
+  </div>
 
 </div>
 
 <script>
-const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
 const GET_QUEUE_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/cdfede8642b74332a9e969ecb11446c3/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xLwi6hBx0uUFq-UXgyKOCBuL0j1KCflH141XYx_GdV8";
-const AUTO_RESET_MS = 7000;
+const FLOW_URL = "https://ab50a7c53d91ebe0af43536abffdf4.1c.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/11/workflows/e363cfcbe824481a996db7108f6067e4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=g6PYS4Aao7RicibmnGbKQ82A-yWjyidusogUgh-ob3g";
 
-const CHECK_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const ALERT_ICON = `<svg class="icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.3" r="0.9" fill="currentColor"/></svg>`;
-
-let resetTimer = null;
-
-function showMessage(kind, title, body) {
-  const el = document.getElementById('msgBox');
-  el.className = 'message show ' + kind;
-  const icon = kind === 'success' ? CHECK_ICON : ALERT_ICON;
-  el.innerHTML = icon + `<div><strong>${title}</strong>${body}</div>`;
-  clearTimeout(resetTimer);
-  resetTimer = setTimeout(resetForm, AUTO_RESET_MS);
+async function loadQueue(){
+  try{
+    const res=await fetch(GET_QUEUE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const data=await res.json().catch(()=>({}));
+    const q=data.queue||data.value||[];
+    const el=document.getElementById('qsList');
+    if(q.length===0){el.innerHTML='<div class="qs-empty">No one waiting yet</div>';return;}
+    el.innerHTML=q.map((p,i)=>`<div class="qs-chip${i===0?' first':''}">${p.crf9c_name||p.name||'—'}</div>`).join('');
+  }catch{document.getElementById('qsList').innerHTML='<div class="qs-empty">—</div>';}
 }
+loadQueue();setInterval(loadQueue,5000);
 
-function resetForm() {
-  document.getElementById('msgBox').className = 'message';
-  const input = document.getElementById('emailInput');
-  input.value = '';
-  input.focus();
-}
-
-document.getElementById('joinBtn').addEventListener('click', joinQueue);
-document.getElementById('emailInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinQueue(); });
-
-async function joinQueue() {
-  const input = document.getElementById('emailInput');
-  const btn = document.getElementById('joinBtn');
-  const email = input.value.trim().toLowerCase();
-
-  document.getElementById('msgBox').className = 'message';
-
-  if (!email || !email.includes('@')) {
-    showMessage('error', 'Enter an email', 'Type the email you registered with, then join the queue.');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Checking…';
-
-  try {
-    const response = await fetch(FLOW_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-
-    const text = await response.text();
-    let data = {};
-    try { data = JSON.parse(text); } catch { data = { message: text }; }
-
-    if (data.message === 'joined_queue' || text.includes('joined_queue')) {
-      showMessage('success', "You're in the queue!", 'Head to the desk when your number is called.');
-      input.value = '';
-    } else if (data.message === 'already_in_queue' || text.includes('already_in_queue')) {
-      showMessage('warning', "You're already in the queue", 'Please wait — staff can see you coming.');
-    } else if (data.message === 'already_collected' || text.includes('already_collected')) {
-      showMessage('success', 'Already collected', 'Your items were already picked up. Enjoy the event!');
-    } else if (text.includes('rejoined_queue')) {
-      showMessage('success', "Welcome back!", "You've rejoined the queue — staff can see you.");
-      input.value = '';
-    } else {
-      showMessage('error', 'No match found', "This email isn't on the list. Please see the help desk.");
-    }
-  } catch (err) {
-    showMessage('error', 'Connection problem', "Couldn't reach the server. Please try again.");
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Join Queue';
+let resetTimer=null;
+async function joinQueue(){
+  const input=document.getElementById('emailInput');
+  const btn=document.getElementById('joinBtn');
+  const email=input.value.trim().toLowerCase();
+  if(!email||!email.includes('@')){showMsg('error','Enter your registered email.');return;}
+  btn.disabled=true;btn.textContent='Checking…';
+  try{
+    const res=await fetch(FLOW_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const text=await res.text();
+    if(text.includes('joined_queue')){showMsg('success',"You're in the queue! 🎉 Head over when your name is called.");input.value='';}
+    else if(text.includes('already_in_queue')){showMsg('warn',"You're already in the queue. Hang tight!");}
+    else if(text.includes('already_collected')){showMsg('success','Already collected — enjoy the event!');}
+    else if(text.includes('rejoined_queue')){showMsg('success',"Welcome back! You've rejoined the queue.");input.value='';}
+    else{showMsg('error',"Email not found. Please see the help desk.");}
+  }catch{showMsg('error',"Connection error — please try again.");}
+  btn.disabled=false;btn.textContent='Join the Queue';
   loadQueue();
 }
-
-async function loadQueue() {
-  try {
-    const res = await fetch(GET_QUEUE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    const text = await res.text();
-    let data = {};
-    try { data = JSON.parse(text); } catch {}
-    const queue = data.queue || [];
-
-    const list = document.getElementById('qsList');
-    if (queue.length === 0) {
-      list.innerHTML = '<div class="qs-empty">No one waiting yet</div>';
-    } else {
-      list.innerHTML = queue.map((p, i) =>
-        `<div class="qs-name${i === 0 ? ' first' : ''}">${p.crf9c_name || p.name || '—'}</div>`
-      ).join('');
-    }
-  } catch {}
+function showMsg(type,text){
+  const el=document.getElementById('msgBox');
+  el.className='msg '+type;el.textContent=text;el.style.display='block';
+  clearTimeout(resetTimer);
+  resetTimer=setTimeout(()=>{el.style.display='none';},7000);
 }
+document.getElementById('emailInput').addEventListener('keydown',e=>{if(e.key==='Enter')joinQueue();});
 
-loadQueue();
-setInterval(loadQueue, 5000);
-
-function scatterQueue() {
-  const names = [...document.querySelectorAll('#qsList .qs-name')];
-  if (names.length < 2) return;
-
-  // overlay covers the full viewport so clones can fly anywhere
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:visible;';
-  document.body.appendChild(overlay);
-
-  // clone each name at its real screen position
-  const clones = names.map(el => {
-    const r = el.getBoundingClientRect();
-    const clone = el.cloneNode(true);
-    clone.style.cssText = `position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;margin:0;animation:none;transition:none;`;
-    overlay.appendChild(clone);
-    return { clone, origTop: r.top, origLeft: r.left };
-  });
-  names.forEach(el => el.style.opacity = '0');
-
-  // scatter outward from screen centre
-  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    clones.forEach(({ clone }, i) => {
-      const angle = (i / clones.length) * Math.PI * 2 + Math.random() * 0.6;
-      const dist = 160 + Math.random() * 200;
-      const rot = (Math.random() - 0.5) * 100;
-      setTimeout(() => {
-        clone.style.transition = 'transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.4s';
-        clone.style.transform = `translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px) rotate(${rot}deg) scale(0.7)`;
-        clone.style.opacity = '0.55';
-      }, i * 50);
-    });
-
-    // snap back with no-overshoot easing
-    setTimeout(() => {
-      // restore opacity instantly before moving — eliminates ghost
-      clones.forEach(({ clone }) => {
-        clone.style.transition = 'none';
-        clone.style.opacity = '1';
-        clone.style.transform = clone.style.transform; // force reflow
-      });
-      requestAnimationFrame(() => {
-        clones.forEach(({ clone }, i) => {
-          setTimeout(() => {
-            clone.style.transition = 'transform 0.65s cubic-bezier(0.16,1,0.3,1)';
-            clone.style.transform = '';
-          }, i * 55);
-        });
-        const lastLands = (clones.length - 1) * 55 + 680;
-        setTimeout(() => {
-          overlay.remove();
-          names.forEach(el => el.style.opacity = '');
-        }, lastLands);
-      });
-    }, clones.length * 50 + 3000);
-  }));
+const facts=document.querySelectorAll('.fact');
+let cur=0;
+const dotsEl=document.getElementById('fnDots');
+facts.forEach((_,i)=>{const d=document.createElement('div');d.className='fn-dot'+(i===0?' on':'');dotsEl.appendChild(d);});
+function showFact(n){
+  facts[cur].classList.remove('active');
+  cur=(n+facts.length)%facts.length;
+  facts[cur].classList.add('active');
+  document.querySelectorAll('.fn-dot').forEach((d,i)=>d.className='fn-dot'+(i===cur?' on':''));
+  document.getElementById('factCnt').textContent=`${cur+1} / ${facts.length}`;
 }
+function moveFact(d){showFact(cur+d);}
+showFact(0);
 
-setInterval(scatterQueue, 10000);
+let tx=0;
+const fw=document.getElementById('factWrap');
+fw.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+fw.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) moveFact(dx<0?1:-1);
+},{passive:true});
 </script>
 </body>
 </html>
