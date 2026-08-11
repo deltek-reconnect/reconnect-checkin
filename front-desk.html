@@ -310,8 +310,12 @@ async function searchUser() {
       resultEl.innerHTML = '<p style="color:rgba(255,255,255,0.6);font-size:14px;padding:8px 0;">Not in queue — checking employee records…</p>';
       const empRes = await fetch(SEARCH_EMPLOYEE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
       const empData = await empRes.json().catch(()=>({}));
-      if (empData.employee) renderEmployeePerson(empData.employee);
-      else resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);">✗ No record found in queue or employee database.</p>';
+      console.log('[SEARCH_EMPLOYEE] raw:', JSON.stringify(empData));
+      const emp = empData.employee
+        || (Array.isArray(empData.value) && empData.value.length > 0 ? empData.value[0] : null)
+        || (empData.crf9c_email || empData.crf9c_name ? empData : null);
+      if (emp) renderEmployeePerson(emp);
+      else resultEl.innerHTML = `<p style="color:#f87171;font-size:12px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);word-break:break-all;">✗ Employee lookup returned: ${JSON.stringify(empData)}</p>`;
     } else {
       resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);">✗ Not found in queue. To also search the employee table, configure SEARCH_EMPLOYEE_URL.</p>';
     }
@@ -325,7 +329,7 @@ function renderSearchPerson(p) {
   const sId = p.crf9c_registrationqueueid || p.crf9c_registrationqueuesid || p.id;
   const idC = sId ? getChecked(sId, 'idcard') : false;
   const tsC = sId ? getChecked(sId, 'tshirt') : false;
-  const status = p.crf9c_statustext || p.status || 'unknown';
+  const status = p.crf9c_statustext || p.status || 'Waiting';
   const [badgeClass, badgeText] = SEARCH_STATUS_MAP[status] || ['status-badge status-unknown', '— ' + status];
   const closeBtn = `<button class="btn btn-skip" style="flex:0 0 auto;width:auto;padding:18px 22px;" onclick="document.getElementById('searchResult').innerHTML='';document.getElementById('searchEmail').value='';">✕ Close</button>`;
   let actionBtn = '';
@@ -333,6 +337,8 @@ function renderSearchPerson(p) {
     actionBtn = `<div style="flex:1;padding:14px;background:#fef2f2;border:2px solid #dc2626;border-radius:10px;text-align:center;"><div style="color:#dc2626;font-weight:800;font-size:15px;">✓ Already Collected</div><div style="color:#9ca3af;font-size:11px;margin-top:2px;">Items collected previously</div></div>`;
   } else if (sId) {
     actionBtn = `<button class="btn btn-collect" style="flex:1;width:auto;" onclick="markSearchCollected('${sId}')">✓ Mark as Collected</button>`;
+  } else {
+    actionBtn = `<div style="flex:1;padding:14px;background:#fef9f0;border:2px solid #f59e0b;border-radius:10px;text-align:center;"><div style="color:#b45309;font-weight:700;font-size:13px;">⚠ Queue ID missing — check flow Response</div></div>`;
   }
   const cancelBtn = `<button onclick="document.getElementById('searchResult').innerHTML='';document.getElementById('searchEmail').value='';" style="flex:0 0 auto;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;">\u2715 Cancel</button>`;
   document.getElementById('searchResult').innerHTML = `
