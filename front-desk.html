@@ -310,12 +310,11 @@ async function searchUser() {
       resultEl.innerHTML = '<p style="color:rgba(255,255,255,0.6);font-size:14px;padding:8px 0;">Not in queue — checking employee records…</p>';
       const empRes = await fetch(SEARCH_EMPLOYEE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) });
       const empData = await empRes.json().catch(()=>({}));
-      console.log('[SEARCH_EMPLOYEE] raw:', JSON.stringify(empData));
       const emp = empData.employee
         || (Array.isArray(empData.value) && empData.value.length > 0 ? empData.value[0] : null)
         || (empData.crf9c_email || empData.crf9c_name ? empData : null);
       if (emp) renderEmployeePerson(emp);
-      else resultEl.innerHTML = `<p style="color:#f87171;font-size:12px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);word-break:break-all;">✗ Employee lookup returned: ${JSON.stringify(empData)}</p>`;
+      else resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);">✗ No record found in queue or employee database.</p>';
     } else {
       resultEl.innerHTML = '<p style="color:#f87171;font-size:14px;padding:12px;background:rgba(248,113,113,0.1);border-radius:8px;border:1px solid rgba(248,113,113,0.3);">✗ Not found in queue. To also search the employee table, configure SEARCH_EMPLOYEE_URL.</p>';
     }
@@ -348,7 +347,7 @@ function renderSearchPerson(p) {
       <span class="${badgeClass}">${badgeText}</span>
       <div class="details">
         <div class="detail-item"><label>Employee ID</label><p>${p.crf9c_employeeid||p.employeeId||'—'}</p></div>
-        <div class="detail-item"><label>T-Shirt Size</label><p>${p.crf9c_tshirtsize||p.tshirtSize||'—'}</p></div>
+        <div class="detail-item"><label>T-Shirt Size</label><p>${p['crf9c_tshirtsize@OData.Community.Display.V1.FormattedValue']||p.crf9c_tshirtsize||p.tshirtSize||'—'}</p></div>
         <div class="detail-item"><label>Team</label><p>${p.crf9c_team||p.team||'—'}</p></div>
         <div class="detail-item"><label>Email</label><p>${p.crf9c_email||p.email||'—'}</p></div>
       </div>
@@ -402,7 +401,7 @@ function renderEmployeePerson(emp) {
       <span class="status-badge status-unknown">— Not in Queue</span>
       <div class="details">
         <div class="detail-item"><label>Employee ID</label><p>${emp.crf9c_employeeid||'—'}</p></div>
-        <div class="detail-item"><label>T-Shirt Size</label><p>${emp.crf9c_tshirtsize||'—'}</p></div>
+        <div class="detail-item"><label>T-Shirt Size</label><p>${emp['crf9c_tshirtsize@OData.Community.Display.V1.FormattedValue']||emp.crf9c_tshirtsize||'—'}</p></div>
         <div class="detail-item"><label>Team</label><p>${emp.crf9c_team||'—'}</p></div>
         <div class="detail-item"><label>Email</label><p>${email}</p></div>
       </div>
